@@ -280,7 +280,7 @@ RunTheTale.java
 
 3. Play the game 
 
-## 📌 NOTES
+##  NOTES
 
 * Built with Java Swing (no external game engine)
 * Lightweight 2D game architecture
