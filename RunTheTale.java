@@ -1,667 +1,752 @@
-package oop;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import java.awt.geom.*;
 
-// ─────────────────────────────────────────────────────────────────
-//  ABSTRACTION: abstract base for every screen/frame in the game
-// ─────────────────────────────────────────────────────────────────
+// =====================================================
+// ABSTRACT SCREEN
+// =====================================================
 abstract class GameScreen extends JFrame {
-
-    protected static final Logger logger =
-            Logger.getLogger(GameScreen.class.getName());
-
-    /** Every screen must know how to show itself cleanly. */
     public abstract void display();
-
-    /** Shared look-and-feel initialiser (static utility). */
-    public static void applyNimbus() {
-        try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | UnsupportedLookAndFeelException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        }
-    }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  SCREEN 1 – Login / Title screen  (NewJFrame)
-// ─────────────────────────────────────────────────────────────────
-class NewJFrame extends GameScreen {
-
-    private JPanel  jPanel1;
-    private JLabel  jLabel1, jLabel2, jLabel3, jLabel4, jLabel5;
-    private JTextField jTextField1;
-    private JButton jButton1;
-
-    /** ENCAPSULATION: username is private; accessed only via getter */
-    private String username = "";
-
-    public String getUsername() { return username; }
-
-    public NewJFrame() { initComponents(); }
-
-    private void initComponents() {
-        setTitle("Run The Tale");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(665, 360));
-        setResizable(false);
-
-        jPanel1 = new JPanel(null);   // use null layout matching original AbsoluteLayout
-        jPanel1.setBackground(new Color(0, 204, 204));
-        jPanel1.setPreferredSize(new Dimension(675, 403));
-
-        // Romeo silhouette placeholder (teal rectangle when image missing)
-        jLabel1 = new JLabel();
-        jLabel1.setBounds(-120, -50, 490, 500);
-        jLabel1.setOpaque(true);
-        jLabel1.setBackground(new Color(0, 180, 180));
-        jPanel1.add(jLabel1);
-
-        // Title labels  "Run  T  ale"
-        jLabel3 = new JLabel("Run      he ");
-        jLabel3.setFont(new Font("Palatino Linotype", Font.ITALIC | Font.BOLD, 68));
-        jLabel3.setForeground(new Color(255, 51, 51));
-        jLabel3.setBounds(250, 60, 310, 90);
-        jPanel1.add(jLabel3);
-
-        jLabel5 = new JLabel("T");
-        jLabel5.setFont(new Font("Palatino Linotype", Font.ITALIC | Font.BOLD, 130));
-        jLabel5.setForeground(new Color(255, 51, 51));
-        jLabel5.setBounds(390, 70, 180, 160);
-        jPanel1.add(jLabel5);
-
-        jLabel4 = new JLabel("ale");
-        jLabel4.setFont(new Font("Palatino Linotype", Font.ITALIC | Font.BOLD, 78));
-        jLabel4.setForeground(new Color(255, 51, 51));
-        jLabel4.setBounds(450, 110, 270, 90);
-        jPanel1.add(jLabel4);
-
-        // Username label
-        jLabel2 = new JLabel("        USERNAME");
-        jLabel2.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jLabel2.setForeground(Color.WHITE);
-        jLabel2.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        jLabel2.setBounds(470, 230, 140, 30);
-        jPanel1.add(jLabel2);
-
-        // Username text field
-        jTextField1 = new JTextField();
-        jTextField1.setFont(new Font("MS PGothic", Font.BOLD, 12));
-        jTextField1.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        jTextField1.setBounds(400, 190, 270, 30);
-        jPanel1.add(jTextField1);
-
-        // Enter button
-        jButton1 = new JButton("ENTER");
-        jButton1.setBackground(new Color(0, 204, 204));
-        jButton1.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jButton1.setForeground(Color.WHITE);
-        jButton1.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        jButton1.setBounds(480, 310, 120, 40);
-        jButton1.addActionListener(e -> onEnter());
-        jPanel1.add(jButton1);
-
-        // Allow pressing Enter key in text field too
-        jTextField1.addActionListener(e -> onEnter());
-
-        getContentPane().add(jPanel1);
-        pack();
-        setLocationRelativeTo(null);
-    }
-
-    private void onEnter() {
-        String input = jTextField1.getText().trim();
-        if (input.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter a username!", "Warning", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        username = input;
-        dispose();
-        // Launch the game screen
-        EventQueue.invokeLater(() -> new secondUI(username).display());
-    }
-
-    @Override
-    public void display() {
-        EventQueue.invokeLater(() -> setVisible(true));
-    }
-
-    public static void main(String[] args) {
-        applyNimbus();
-        EventQueue.invokeLater(() -> new NewJFrame().display());
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  GAME ENTITY  –  base class for moving / interactive objects
-//  INHERITANCE: Car and Player extend this
-// ─────────────────────────────────────────────────────────────────
+// =====================================================
+// ABSTRACT GAME ENTITY
+// =====================================================
 abstract class GameEntity {
-    protected JLabel label;
-    protected int    x, y, width, height;
+    protected int x, y, width, height;
 
-    public GameEntity(JLabel label, int x, int y, int width, int height) {
-        this.label  = label;
-        this.x      = x;
-        this.y      = y;
-        this.width  = width;
+    public GameEntity(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
         this.height = height;
-        updateLabelBounds();
     }
-
-    protected void updateLabelBounds() {
-        label.setBounds(x, y, width, height);
-    }
-
-    /** ABSTRACTION: every entity must be able to update itself */
-    public abstract void update();
 
     public Rectangle getBounds() {
-        return new Rectangle(x + 10, y + 10, width - 20, height - 20);  // shrink hitbox slightly
-    }
-
-    public JLabel getLabel() { return label; }
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  Car entity  (INHERITANCE from GameEntity)
-// ─────────────────────────────────────────────────────────────────
-class Car extends GameEntity {
-
-    private int speed;
-    private int resetX;   // where the car resets after passing left edge
-    private int laneY;
-
-    /** POLYMORPHISM: each car has its own speed and lane */
-    public Car(JLabel label, int startX, int laneY, int speed, int resetX) {
-        super(label, startX, laneY, 90, 50);
-        this.speed  = speed;
-        this.resetX = resetX;
-        this.laneY  = laneY;
-        styleLabel();
-    }
-
-    private void styleLabel() {
-        label.setOpaque(true);
-        label.setBackground(new Color(180, 30, 30));
-        label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-        label.setText("<html><center>🚗</center></html>");
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        label.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
-        updateLabelBounds();
-    }
-
-    @Override
-    public void update() {
-        x -= speed;
-        if (x + width < 0) {
-            x = resetX;  // loop back from right
+        // Only collide on lower body (torso+legs), so jumping overhead clears cars
+        if (this instanceof Player) {
+            return new Rectangle(x + 14, y + 30, 28, 55);
         }
-        updateLabelBounds();
+        // Cars: tight box matching visible car body only
+        return new Rectangle(x + 8, y + 10, width - 16, height - 14);
     }
 
-    public void increaseSpeed(int delta) { speed += delta; }
+    public abstract void update();
+    public abstract void draw(Graphics2D g2);
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  Player entity  (INHERITANCE from GameEntity)
-// ─────────────────────────────────────────────────────────────────
+// =====================================================
+// PLAYER (stick figure character)
+// =====================================================
 class Player extends GameEntity {
+    private int velocityY = 0;
+    private boolean jumping = false;
 
-    private static final int GROUND_Y      = 240;  // normal standing Y
-    private static final int JUMP_VELOCITY = -15;
-    private static final int GRAVITY       = 1;
+    private static final int GROUND_Y = 340;
 
-    private int  velocityY   = 0;
-    private boolean jumping  = false;
-    private boolean big      = false;  // grows on win
-
-    public Player(JLabel label) {
-        super(label, 530, GROUND_Y, 80, 110);
-        styleLabel();
-    }
-
-    private void styleLabel() {
-        label.setOpaque(true);
-        label.setBackground(new Color(70, 130, 180));
-        label.setBorder(BorderFactory.createLineBorder(new Color(30, 80, 130), 2));
-        label.setText("<html><center>🧍</center></html>");
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        label.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
-        updateLabelBounds();
+    public Player() {
+        super(100, GROUND_Y, 55, 90);
     }
 
     public void jump() {
         if (!jumping) {
-            velocityY = JUMP_VELOCITY;
-            jumping   = true;
+            velocityY = -20;
+            jumping = true;
         }
     }
 
     @Override
     public void update() {
         if (jumping) {
-            y         += velocityY;
-            velocityY += GRAVITY;
+            y += velocityY;
+            velocityY += 1;
             if (y >= GROUND_Y) {
-                y         = GROUND_Y;
-                jumping   = false;
+                y = GROUND_Y;
                 velocityY = 0;
+                jumping = false;
             }
         }
-        updateLabelBounds();
     }
 
-    public void growBig() {
-        if (!big) {
-            big    = true;
-            width  = 160;
-            height = 220;
-            label.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 96));
-            updateLabelBounds();
-        }
-    }
+    @Override
+    public void draw(Graphics2D g2) {
+        Graphics2D g = (Graphics2D) g2.create();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.translate(x, y);
 
-    public boolean isOnGround() { return !jumping; }
+        // Shadow
+        g.setColor(new Color(0, 0, 0, 40));
+        g.fillOval(5, 84, 45, 8);
+
+        // Shirt (body)
+        g.setColor(new Color(30, 100, 220));
+        g.fillRoundRect(13, 32, 30, 30, 6, 6);
+
+        // Pants
+        g.setColor(new Color(40, 40, 120));
+        g.fillRect(13, 58, 12, 22);
+        g.fillRect(30, 58, 12, 22);
+
+        // Shoes
+        g.setColor(new Color(60, 40, 20));
+        g.fillRoundRect(9, 76, 16, 8, 4, 4);
+        g.fillRoundRect(30, 76, 16, 8, 4, 4);
+
+        // Skin
+        g.setColor(new Color(255, 210, 160));
+
+        // Head
+        g.fillOval(14, 2, 28, 28);
+
+        // Static arms (no swing)
+        g.setStroke(new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(255, 210, 160));
+        // Left arm — held naturally at side
+        int[] lax = {13, 4, 10};
+        int[] lay = {35, 45, 56};
+        g.drawPolyline(lax, lay, 3);
+        // Right arm — held naturally at side
+        int[] rax = {42, 51, 45};
+        int[] ray = {35, 45, 56};
+        g.drawPolyline(rax, ray, 3);
+
+        // Face details
+        g.setStroke(new BasicStroke(1));
+        // Eyes
+        g.setColor(new Color(50, 30, 10));
+        g.fillOval(20, 10, 5, 5);
+        g.fillOval(31, 10, 5, 5);
+        // Smile
+        g.setColor(new Color(180, 80, 80));
+        g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.drawArc(21, 17, 14, 8, 200, 140);
+
+        // Hair
+        g.setColor(new Color(60, 30, 10));
+        g.fillArc(14, 2, 28, 18, 0, 180);
+
+        g.setStroke(new BasicStroke(1));
+        g.dispose();
+    }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  SCREEN 2 – Main game screen  (secondUI)
-//  INHERITANCE: extends GameScreen
-// ─────────────────────────────────────────────────────────────────
-class secondUI extends GameScreen {
+// =====================================================
+// CAR (drawn realistically)
+// =====================================================
+class Car extends GameEntity {
+    private int speed;
+    private int resetX;
+    private Color bodyColor;
+    private Color accentColor;
+    private String carType;
 
-    // ── UI components ──
-    private JPanel   jPanel1;
-    private JLabel   jLabel1, jLabel2, jLabel3, jLabel4, jLabel5, jLabel6, jLabel7;
-    private JButton  jButton1Up, jButton2Down, jButton3Start;
-    private JLabel   timerLabel;
-    private JMenuBar jMenuBar1;
-
-    // ── Game state (ENCAPSULATION: all private) ──
-    private final String  username;
-    private       int     score        = 0;
-    private       int     timeLeft     = 20;
-    private       boolean gameRunning  = false;
-    private       boolean gameOver     = false;
-
-    private Timer gameLoop;
-    private Timer countdown;
-
-    // ── OOP entities ──
-    private Player player;
-    private Car    car1, car2, car3;
-
-    // ── Difficulty ramp ──
-    private int  carsAvoided    = 0;
-    private int  winThreshold   = 5;   // avoid this many to win
-
-    public secondUI(String username) {
-        this.username = username;
-        initComponents();
+    public Car(int startX, int startY, int speed, int resetX, Color bodyColor, Color accentColor, String carType) {
+        super(startX, startY, 120, 55);
+        this.speed = speed;
+        this.resetX = resetX;
+        this.bodyColor = bodyColor;
+        this.accentColor = accentColor;
+        this.carType = carType;
     }
 
-    // ─── UI construction ───────────────────────────────────────────
-    private void initComponents() {
-        setTitle("Run The Tale – " + username);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    @Override
+    public void update() {
+        x -= speed;
+        if (x < -140) {
+            x = resetX;
+        }
+    }
+
+    @Override
+    public void draw(Graphics2D g2) {
+        Graphics2D g = (Graphics2D) g2.create();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.translate(x, y);
+
+        if (carType.equals("suv")) {
+            drawSUV(g);
+        } else if (carType.equals("sports")) {
+            drawSports(g);
+        } else {
+            drawSedan(g);
+        }
+
+        g.dispose();
+    }
+
+    private void drawSedan(Graphics2D g) {
+        g.setColor(new Color(0, 0, 0, 40));
+        g.fillOval(10, 48, 100, 10);
+
+        g.setColor(bodyColor);
+        g.fillRoundRect(0, 28, 120, 24, 8, 8);
+
+        int[] roofX = {22, 35, 85, 98, 115, 5};
+        int[] roofY = {28, 8, 8, 28, 28, 28};
+        g.fillPolygon(roofX, roofY, 6);
+
+        g.setColor(new Color(180, 220, 255, 200));
+        g.fillPolygon(new int[]{37, 43, 60, 60}, new int[]{10, 11, 11, 27}, 4);
+        g.fillPolygon(new int[]{63, 63, 80, 86}, new int[]{11, 27, 27, 11}, 4);
+        g.setColor(accentColor.darker());
+        g.setStroke(new BasicStroke(2));
+        g.drawLine(61, 11, 61, 27);
+        g.setStroke(new BasicStroke(1));
+
+        g.setColor(new Color(200, 230, 255, 100));
+        g.fillPolygon(new int[]{23, 35, 37, 5}, new int[]{27, 9, 27, 27}, 4);
+        g.fillPolygon(new int[]{85, 98, 115, 83}, new int[]{9, 27, 27, 27}, 4);
+
+        g.setColor(bodyColor.darker());
+        g.setStroke(new BasicStroke(1.2f));
+        g.drawLine(60, 27, 60, 50);
+        g.setStroke(new BasicStroke(1));
+
+        g.setColor(new Color(80, 80, 90));
+        g.fillRoundRect(-4, 36, 12, 12, 4, 4);
+        g.fillRoundRect(112, 36, 12, 12, 4, 4);
+
+        g.setColor(new Color(255, 255, 180));
+        g.fillOval(108, 30, 10, 8);
+        g.setColor(new Color(220, 50, 50));
+        g.fillOval(2, 30, 10, 8);
+
+        drawWheel(g, 18, 44);
+        drawWheel(g, 84, 44);
+    }
+
+    private void drawSUV(Graphics2D g) {
+        g.setColor(new Color(0, 0, 0, 40));
+        g.fillOval(10, 48, 100, 10);
+
+        g.setColor(bodyColor);
+        g.fillRoundRect(0, 14, 120, 38, 6, 6);
+
+        g.setColor(new Color(180, 220, 255, 200));
+        g.fillRect(20, 17, 26, 18);
+        g.fillRect(50, 17, 26, 18);
+        g.fillRect(80, 17, 22, 18);
+
+        g.setColor(new Color(50, 50, 50));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawRect(20, 17, 26, 18);
+        g.drawRect(50, 17, 26, 18);
+        g.drawRect(80, 17, 22, 18);
+
+        g.setColor(new Color(70, 70, 70));
+        g.fillRect(15, 13, 90, 3);
+
+        g.setColor(new Color(60, 60, 65));
+        g.fillRoundRect(-5, 30, 15, 18, 4, 4);
+        g.fillRoundRect(110, 30, 15, 18, 4, 4);
+
+        g.setColor(new Color(255, 255, 180));
+        g.fillRect(108, 22, 8, 6);
+        g.setColor(new Color(220, 50, 50));
+        g.fillRect(4, 22, 8, 6);
+
+        g.setColor(bodyColor.darker());
+        g.setStroke(new BasicStroke(3));
+        g.drawArc(8, 34, 30, 20, 0, 180);
+        g.drawArc(78, 34, 30, 20, 0, 180);
+        g.setStroke(new BasicStroke(1));
+
+        drawWheel(g, 15, 44);
+        drawWheel(g, 83, 44);
+    }
+
+    private void drawSports(Graphics2D g) {
+        g.setColor(new Color(0, 0, 0, 40));
+        g.fillOval(10, 48, 100, 8);
+
+        int[] bodyX = {0, 10, 30, 90, 115, 120, 120, 0};
+        int[] bodyY = {44, 32, 22, 22, 30, 36, 52, 52};
+        g.setColor(bodyColor);
+        g.fillPolygon(bodyX, bodyY, 8);
+
+        g.setColor(new Color(180, 220, 255, 200));
+        g.fillPolygon(new int[]{32, 40, 65, 60}, new int[]{22, 24, 24, 22}, 4);
+        g.fillPolygon(new int[]{68, 72, 88, 82}, new int[]{24, 22, 22, 30}, 4);
+
+        g.setColor(accentColor);
+        g.setStroke(new BasicStroke(3));
+        g.drawLine(20, 38, 105, 38);
+        g.setStroke(new BasicStroke(1));
+
+        g.setColor(new Color(50, 50, 50));
+        g.fillRect(4, 30, 8, 4);
+        g.fillRect(3, 28, 10, 3);
+
+        g.setColor(new Color(255, 255, 180));
+        g.fillPolygon(new int[]{110, 120, 120, 112}, new int[]{32, 36, 42, 38}, 4);
+        g.setColor(new Color(220, 50, 50));
+        g.fillPolygon(new int[]{0, 8, 6, 0}, new int[]{36, 38, 44, 42}, 4);
+
+        g.setColor(new Color(80, 80, 90));
+        g.fillRoundRect(115, 40, 8, 8, 2, 2);
+
+        drawWheel(g, 18, 43);
+        drawWheel(g, 82, 43);
+    }
+
+    private void drawWheel(Graphics2D g, int cx, int cy) {
+        g.setColor(new Color(30, 30, 30));
+        g.fillOval(cx - 14, cy - 14, 28, 28);
+        g.setColor(new Color(190, 190, 200));
+        g.fillOval(cx - 9, cy - 9, 18, 18);
+        g.setColor(new Color(130, 130, 140));
+        g.fillOval(cx - 4, cy - 4, 8, 8);
+        g.setColor(new Color(160, 160, 170));
+        g.setStroke(new BasicStroke(1.5f));
+        for (int i = 0; i < 5; i++) {
+            double angle = Math.toRadians(i * 72);
+            int sx = cx + (int)(4 * Math.cos(angle));
+            int sy = cy + (int)(4 * Math.sin(angle));
+            int ex = cx + (int)(9 * Math.cos(angle));
+            int ey = cy + (int)(9 * Math.sin(angle));
+            g.drawLine(sx, sy, ex, ey);
+        }
+        g.setStroke(new BasicStroke(1));
+    }
+}
+
+// =====================================================
+// GAME PANEL (custom painted)
+// =====================================================
+class GamePanel extends JPanel {
+    private Player player;
+    private Car[] cars;
+    private int score;
+
+    public GamePanel(Player player, Car[] cars) {
+        this.player = player;
+        this.cars = cars;
+        setLayout(null);
+    }
+
+    public void setScore(int score) { this.score = score; }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Sky
+        g2.setColor(new Color(135, 206, 250));
+        g2.fillRect(0, 0, 800, 300);
+
+        // Clouds
+        drawCloud(g2, 80, 60, 70);
+        drawCloud(g2, 280, 40, 90);
+        drawCloud(g2, 550, 70, 60);
+        drawCloud(g2, 700, 45, 80);
+
+        // Ground/Road
+        g2.setColor(new Color(80, 80, 80));
+        g2.fillRect(0, 300, 800, 220);
+
+        // Road surface
+        g2.setColor(new Color(100, 100, 100));
+        g2.fillRect(0, 310, 800, 210);
+
+        // Road lines
+        g2.setColor(new Color(255, 220, 0));
+        g2.setStroke(new BasicStroke(4, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{30, 20}, score * 3));
+        g2.drawLine(0, 395, 800, 395);
+        g2.setStroke(new BasicStroke(1));
+
+        // Road edge lines
+        g2.setColor(Color.WHITE);
+        g2.setStroke(new BasicStroke(3));
+        g2.drawLine(0, 314, 800, 314);
+        g2.drawLine(0, 500, 800, 500);
+        g2.setStroke(new BasicStroke(1));
+
+        for (Car car : cars) car.draw(g2);
+        player.draw(g2);
+    }
+
+    private void drawCloud(Graphics2D g2, int x, int y, int size) {
+        g2.setColor(new Color(255, 255, 255, 200));
+        g2.fillOval(x, y, size, size / 2);
+        g2.fillOval(x + size / 4, y - size / 4, size / 2, size / 2);
+        g2.fillOval(x + size / 2, y, size / 2, size / 3);
+    }
+}
+
+// =====================================================
+// FIRST UI (welcome screen)
+// =====================================================
+class firstUI extends GameScreen {
+    private JTextField usernameField;
+
+    public firstUI() {
+        setTitle("Run The Tale");
+        setSize(800, 520);
+        setLayout(null);
         setResizable(false);
 
-        jPanel1 = new JPanel(null);
-        jPanel1.setBackground(new Color(0, 153, 153));
-        jPanel1.setPreferredSize(new Dimension(623, 370));
-
-        // ─ Road background ─
-        jLabel3 = new JLabel();
-        jLabel3.setBounds(0, 0, 623, 370);
-        jLabel3.setOpaque(true);
-        jLabel3.setBackground(new Color(60, 60, 60));
-        // Road markings painted with a custom component
-        jLabel3.setBorder(BorderFactory.createLineBorder(new Color(40, 40, 40), 3));
-        jPanel1.add(jLabel3);
-
-        // ─ Road stripe decoration ─
-        JLabel roadStripe = new JLabel();
-        roadStripe.setBounds(0, 210, 623, 8);
-        roadStripe.setOpaque(true);
-        roadStripe.setBackground(new Color(255, 220, 50));
-        jPanel1.add(roadStripe);
-
-        JLabel roadStripe2 = new JLabel();
-        roadStripe2.setBounds(0, 300, 623, 8);
-        roadStripe2.setOpaque(true);
-        roadStripe2.setBackground(new Color(255, 220, 50));
-        jPanel1.add(roadStripe2);
-
-        // ─ Sky ─
-        JLabel sky = new JLabel();
-        sky.setBounds(0, 0, 623, 180);
-        sky.setOpaque(true);
-        sky.setBackground(new Color(135, 206, 235));
-        jPanel1.add(sky);
-
-        // ─ Cars (jLabel4, jLabel5, jLabel6) ─
-        jLabel4 = new JLabel();
-        jLabel5 = new JLabel();
-        jLabel6 = new JLabel();
-
-        car1 = new Car(jLabel4, 650,  220, 4, 800);
-        car2 = new Car(jLabel5, 900,  255, 5, 950);
-        car3 = new Car(jLabel6, 1150, 235, 3, 1100);
-
-        jPanel1.add(jLabel4);
-        jPanel1.add(jLabel5);
-        jPanel1.add(jLabel6);
-
-        // ─ Player (jLabel7) ─
-        jLabel7 = new JLabel();
-        player = new Player(jLabel7);
-        jPanel1.add(jLabel7);
-
-        // ─ Timer label ─
-        timerLabel = new JLabel("TIME LEFT: 0:20");
-        timerLabel.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        timerLabel.setForeground(Color.WHITE);
-        timerLabel.setBounds(470, 10, 140, 25);
-        jPanel1.add(timerLabel);
-
-        // ─ Score label ─
-        jLabel1 = new JLabel("SCORE: 0");
-        jLabel1.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jLabel1.setForeground(Color.WHITE);
-        jLabel1.setBounds(20, 10, 160, 25);
-        jPanel1.add(jLabel1);
-
-        // ─ Player label behind it (decorative cutout area) ─
-        jLabel2 = new JLabel();
-        jLabel2.setBounds(-200, -60, 320, 520);
-        jPanel1.add(jLabel2);
-
-        // ─ START button ─
-        jButton3Start = new JButton("START");
-        jButton3Start.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jButton3Start.setBounds(260, 150, 100, 40);
-        jButton3Start.addActionListener(e -> startGame());
-        jPanel1.add(jButton3Start);
-
-        // ─ Jump UP button ─
-        jButton1Up = new JButton("▲ JUMP");
-        jButton1Up.setBounds(540, 220, 70, 40);
-        jButton1Up.setEnabled(false);
-        jButton1Up.addActionListener(e -> player.jump());
-        jPanel1.add(jButton1Up);
-
-        // ─ (Down button kept for layout parity; no-op) ─
-        jButton2Down = new JButton("▼");
-        jButton2Down.setBounds(540, 270, 70, 40);
-        jButton2Down.setEnabled(false);
-        jPanel1.add(jButton2Down);
-
-        // ─ Menu bar ─
-        jMenuBar1 = new JMenuBar();
-        jMenuBar1.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        JMenu jMenu1 = new JMenu("MENU");
-
-        JMenuItem miSettings = new JMenuItem("Settings");
-        JMenuItem miResume   = new JMenuItem("Resume");
-        JMenuItem miExit     = new JMenuItem("Exit");
-
-        miSettings.addActionListener(e -> JOptionPane.showMessageDialog(this, "No settings yet."));
-        miResume.addActionListener(e -> { if (!gameRunning && !gameOver) startGame(); });
-        miExit.addActionListener(e -> System.exit(0));
-
-        jMenu1.add(miSettings);
-        jMenu1.add(miResume);
-        jMenu1.add(miExit);
-        jMenuBar1.add(jMenu1);
-        setJMenuBar(jMenuBar1);
-
-        // Key binding for spacebar jump
-        jPanel1.setFocusable(true);
-        jPanel1.addKeyListener(new KeyAdapter() {
-            @Override public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE && gameRunning) player.jump();
+        JPanel bg = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Solid blue background
+                g2.setColor(new Color(30, 90, 200));
+                g2.fillRect(0, 0, 800, 520);
+                // Subtle lighter blue overlay at top for depth
+                g2.setColor(new Color(60, 130, 240, 120));
+                g2.fillRect(0, 0, 800, 260);
             }
-        });
+        };
+        bg.setLayout(null);
+        bg.setBounds(0, 0, 800, 520);
+        add(bg);
 
-        getContentPane().add(jPanel1);
-        pack();
+        // Title card
+        JPanel card = new JPanel();
+        card.setLayout(null);
+        card.setBackground(new Color(255, 255, 255, 220));
+        card.setBounds(200, 100, 400, 280);
+        card.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true));
+        bg.add(card);
+
+        JLabel title = new JLabel("RUN THE TALE");
+        title.setFont(new Font("Arial", Font.BOLD, 36));
+        title.setForeground(new Color(30, 80, 180));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+        title.setBounds(0, 20, 400, 50);
+        card.add(title);
+
+        JLabel sub = new JLabel("Dodge the cars. Survive the road.");
+        sub.setFont(new Font("Arial", Font.PLAIN, 14));
+        sub.setForeground(new Color(100, 100, 110));
+        sub.setHorizontalAlignment(SwingConstants.CENTER);
+        sub.setBounds(0, 68, 400, 22);
+        card.add(sub);
+
+        JLabel usernameLabel = new JLabel("Enter your username:");
+        usernameLabel.setForeground(new Color(50, 50, 60));
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 15));
+        usernameLabel.setBounds(70, 108, 260, 26);
+        card.add(usernameLabel);
+
+        usernameField = new JTextField();
+        usernameField.setBounds(70, 138, 260, 38);
+        usernameField.setFont(new Font("Arial", Font.PLAIN, 15));
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(180, 180, 200), 1, true),
+            BorderFactory.createEmptyBorder(4, 10, 4, 10)));
+        card.add(usernameField);
+
+        // Single ENTER button, centered
+        JButton enterButton = new JButton("ENTER");
+        enterButton.setBounds(130, 200, 140, 46);
+        enterButton.setFont(new Font("Arial", Font.BOLD, 16));
+        enterButton.setBackground(new Color(40, 120, 220));
+        enterButton.setForeground(Color.WHITE);
+        enterButton.setFocusPainted(false);
+        enterButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        enterButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        enterButton.addActionListener(e -> openGame());
+        card.add(enterButton);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
 
-    // ─── Game loop ─────────────────────────────────────────────────
+    private void openGame() {
+        String username = usernameField.getText().trim();
+        if (username.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a username!");
+            return;
+        }
+        dispose();
+        new secondUI(username).display();
+    }
+
+    @Override
+    public void display() { setVisible(true); }
+}
+
+// =====================================================
+// SECOND UI (game screen)
+// =====================================================
+class secondUI extends GameScreen {
+    private GamePanel gamePanel;
+    private JLabel scoreLabel;
+    private JLabel timerLabel;
+    private JButton startButton;
+    private JButton jumpButton;
+    private Player player;
+    private Car[] cars;
+    private Timer gameLoop;
+    private Timer countdown;
+    private int score = 0;
+    private int timeLeft = 15;
+    private boolean running = false;
+    private String username;
+
+    public secondUI(String username) {
+        this.username = username;
+        initialize();
+    }
+
+    private void initialize() {
+        setTitle("Run The Tale");
+        setSize(800, 520);
+        setResizable(false);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        player = new Player();
+
+        cars = new Car[]{
+            new Car(750,  330, 5, 1050, new Color(200, 40,  40),  Color.WHITE,          "sedan"),
+            new Car(980,  330, 4, 1280, new Color(40,  100, 200), new Color(180,220,255),"suv"),
+            new Car(1250, 330, 6, 1500, new Color(30,  160, 80),  new Color(200,255,200),"sports"),
+            new Car(1550, 330, 3, 1800, new Color(200, 140, 20),  Color.WHITE,           "sedan"),
+        };
+
+        gamePanel = new GamePanel(player, cars);
+        gamePanel.setLayout(null);
+
+        // HUD
+        scoreLabel = new JLabel("SCORE: 0");
+        scoreLabel.setForeground(Color.WHITE);
+        scoreLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        scoreLabel.setBounds(15, 10, 200, 30);
+        scoreLabel.setOpaque(true);
+        scoreLabel.setBackground(new Color(0, 0, 0, 100));
+        gamePanel.add(scoreLabel);
+
+        timerLabel = new JLabel("TIME: 15");
+        timerLabel.setForeground(Color.WHITE);
+        timerLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        timerLabel.setBounds(640, 10, 140, 30);
+        timerLabel.setOpaque(true);
+        timerLabel.setBackground(new Color(0, 0, 0, 100));
+        gamePanel.add(timerLabel);
+
+        JLabel userLabel = new JLabel("Player: " + username);
+        userLabel.setForeground(Color.WHITE);
+        userLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        userLabel.setBounds(15, 46, 200, 22);
+        userLabel.setOpaque(true);
+        userLabel.setBackground(new Color(0, 0, 0, 80));
+        gamePanel.add(userLabel);
+
+        // Start button
+        startButton = new JButton("START GAME");
+        startButton.setFont(new Font("Arial", Font.BOLD, 20));
+        startButton.setBounds(290, 180, 210, 60);
+        startButton.setBackground(new Color(40, 160, 60));
+        startButton.setForeground(Color.WHITE);
+        startButton.setFocusPainted(false);
+        startButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        startButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        startButton.addActionListener(e -> startGame());
+        gamePanel.add(startButton);
+
+        // Jump button (up arrow)
+        jumpButton = new JButton("▲");
+        jumpButton.setFont(new Font("Arial", Font.BOLD, 22));
+        jumpButton.setBounds(350, 440, 90, 50);
+        jumpButton.setBackground(new Color(40, 120, 220));
+        jumpButton.setForeground(Color.WHITE);
+        jumpButton.setFocusPainted(false);
+        jumpButton.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        jumpButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        jumpButton.setFocusable(false);
+        jumpButton.setVisible(false);
+        jumpButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (running) player.jump();
+            }
+        });
+        gamePanel.add(jumpButton);
+
+        // Spacebar as instant backup jump
+        InputMap inputMap = gamePanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = gamePanel.getActionMap();
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "jump");
+        actionMap.put("jump", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                if (running) player.jump();
+            }
+        });
+
+        setContentPane(gamePanel);
+        setLocationRelativeTo(null);
+    }
+
     private void startGame() {
-        if (gameRunning) return;
-        gameRunning   = true;
-        gameOver      = false;
-        score         = 0;
-        timeLeft      = 20;
-        carsAvoided   = 0;
+        if (running) return;
+        running = true;
+        startButton.setVisible(false);
+        jumpButton.setVisible(true);
 
-        jButton3Start.setEnabled(false);
-        jButton1Up.setEnabled(true);
-        jPanel1.requestFocusInWindow();
-
-        // 16 ms ≈ 60 fps
-        gameLoop = new Timer(16, e -> tick());
+        gameLoop = new Timer(16, e -> {
+            player.update();
+            for (Car car : cars) car.update();
+            checkCollision();
+            score++;
+            scoreLabel.setText("SCORE: " + score);
+            gamePanel.setScore(score);
+            gamePanel.repaint();
+        });
         gameLoop.start();
 
         countdown = new Timer(1000, e -> {
             timeLeft--;
-            int mins = timeLeft / 60;
-            int secs = timeLeft % 60;
-            timerLabel.setText(String.format("TIME LEFT: %d:%02d", mins, secs));
-            if (timeLeft <= 0) onTimeUp();
+            timerLabel.setText("TIME: " + timeLeft);
+            if (timeLeft <= 0) winGame();
         });
         countdown.start();
     }
 
-    /** Main update tick – POLYMORPHISM: update() called on all GameEntity subtypes */
-    private void tick() {
-        if (!gameRunning) return;
-
-        player.update();
-        car1.update();
-        car2.update();
-        car3.update();
-
-        checkCollisions();
-        jPanel1.repaint();
-    }
-
-    private void checkCollisions() {
-        Rectangle playerRect = player.getBounds();
-
-        for (Car car : new Car[]{car1, car2, car3}) {
-            Rectangle carRect = car.getBounds();
-            if (playerRect.intersects(carRect)) {
-                onCrash();
+    private void checkCollision() {
+        Rectangle playerBox = player.getBounds();
+        for (Car car : cars) {
+            if (playerBox.intersects(car.getBounds())) {
+                loseGame();
                 return;
-            }
-
-            // Car passed the player → score point
-            if (car.x + car.width < player.x && !car.label.getClientProperty("scored").equals(Boolean.TRUE)) {
-                car.label.putClientProperty("scored", Boolean.TRUE);
-                score += 10;
-                carsAvoided++;
-                jLabel1.setText("SCORE: " + score);
-            }
-            // Reset scored flag when car loops back
-            if (car.x > player.x) {
-                car.label.putClientProperty("scored", Boolean.FALSE);
             }
         }
     }
 
-    private void onCrash() {
-        stopGame();
-        player.label.setText("<html><center>💥</center></html>");
-        Timer pause = new Timer(800, e -> showResult(false));
-        pause.setRepeats(false);
-        pause.start();
-    }
-
-    private void onTimeUp() {
-        stopGame();
-        // Win condition: survived the full timer
-        showResult(true);
-    }
-
     private void stopGame() {
-        gameRunning = false;
-        gameOver    = true;
-        if (gameLoop  != null) gameLoop.stop();
+        running = false;
+        if (gameLoop != null) gameLoop.stop();
         if (countdown != null) countdown.stop();
-        jButton1Up.setEnabled(false);
     }
 
-    /** POLYMORPHISM: calls growBig() defined in Player */
-    private void showResult(boolean won) {
-        if (won) player.growBig();
+    private void loseGame() {
+        stopGame();
+        JOptionPane.showMessageDialog(this, "GAME OVER! You got hit!");
         dispose();
-        EventQueue.invokeLater(() -> new thirdUI(username, score, won).display());
+        new ThirdUI(username, score, false).display();
+    }
+
+    private void winGame() {
+        stopGame();
+        JOptionPane.showMessageDialog(this, "YOU WIN! Well done, " + username + "!");
+        dispose();
+        new ThirdUI(username, score, true).display();
     }
 
     @Override
-    public void display() {
-        EventQueue.invokeLater(() -> setVisible(true));
-    }
+    public void display() { setVisible(true); }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  SCREEN 3 – Result screen  (thirdUI)
-//  INHERITANCE: extends GameScreen
-// ─────────────────────────────────────────────────────────────────
-class thirdUI extends GameScreen {
-
-    private final String  username;
-    private final int     score;
-    private final boolean won;
-
-    private JPanel     jPanel1;
-    private JLabel     jLabel1, jLabel2;
-    private JTextField jTextField1, jTextField2, jTextField3;
-    private JButton    jButton1, jButton2;
-
-    public thirdUI(String username, int score, boolean won) {
-        this.username = username;
-        this.score    = score;
-        this.won      = won;
-        initComponents();
-    }
-
-    private void initComponents() {
-        setTitle(won ? "You Win! 🎉" : "Game Over");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+// =====================================================
+// THIRD UI (result screen)
+// =====================================================
+class ThirdUI extends GameScreen {
+    public ThirdUI(String username, int score, boolean win) {
+        setTitle("Result");
+        setSize(700, 460);
+        setLayout(null);
         setResizable(false);
 
-        jPanel1 = new JPanel();
-        jPanel1.setBackground(new Color(0, 153, 153));
-        jPanel1.setLayout(new BoxLayout(jPanel1, BoxLayout.Y_AXIS));
-        jPanel1.setBorder(BorderFactory.createEmptyBorder(30, 50, 20, 50));
+        JPanel bg = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(win ? new Color(20, 100, 60) : new Color(120, 30, 30));
+                g.fillRect(0, 0, 700, 460);
+                g.setColor(new Color(255, 255, 255, 18));
+                g.fillOval(-60, -60, 300, 300);
+                g.fillOval(500, 300, 250, 250);
+            }
+        };
+        bg.setLayout(null);
+        bg.setBounds(0, 0, 700, 460);
+        add(bg);
 
-        // ── Big status emoji ──
-        JLabel emoji = new JLabel(won ? "🏆" : "💥");
-        emoji.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 80));
-        emoji.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jPanel1.add(emoji);
-        jPanel1.add(Box.createVerticalStrut(10));
+        // Result card
+        JPanel card = new JPanel();
+        card.setLayout(null);
+        card.setBackground(new Color(255, 255, 255, 230));
+        card.setBounds(120, 70, 460, 300);
+        card.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true));
+        bg.add(card);
 
-        // ── jTextField3: congratulations or game over message ──
-        jTextField3 = new JTextField(won
-                ? "🎉 CONGRATULATIONS! 🎉"
-                : "💥 GAME OVER! Better luck next time.");
-        jTextField3.setEditable(false);
-        jTextField3.setBackground(new Color(0, 153, 153));
-        jTextField3.setForeground(Color.WHITE);
-        jTextField3.setFont(new Font("MS PGothic", Font.BOLD, won ? 16 : 14));
-        jTextField3.setBorder(null);
-        jTextField3.setHorizontalAlignment(JTextField.CENTER);
-        jTextField3.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jTextField3.setMaximumSize(new Dimension(400, 35));
-        jPanel1.add(jTextField3);
-        jPanel1.add(Box.createVerticalStrut(20));
+        JLabel resultLabel = new JLabel(win ? "YOU WIN!" : "GAME OVER");
+        resultLabel.setForeground(win ? new Color(20, 130, 60) : new Color(180, 30, 30));
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 38));
+        resultLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        resultLabel.setBounds(0, 20, 460, 55);
+        card.add(resultLabel);
 
-        // ── jLabel2 / jTextField2 : USERNAME row ──
-        jLabel2 = new JLabel("USERNAME");
-        jLabel2.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jLabel2.setForeground(Color.WHITE);
-        jLabel2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jPanel1.add(jLabel2);
+        JLabel divider = new JLabel("────────────────────────");
+        divider.setForeground(new Color(200, 200, 200));
+        divider.setHorizontalAlignment(SwingConstants.CENTER);
+        divider.setBounds(0, 78, 460, 22);
+        card.add(divider);
 
-        jTextField2 = new JTextField(username);
-        jTextField2.setEditable(false);
-        jTextField2.setFont(new Font("MS PGothic", Font.PLAIN, 13));
-        jTextField2.setHorizontalAlignment(JTextField.CENTER);
-        jTextField2.setMaximumSize(new Dimension(200, 28));
-        jTextField2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jPanel1.add(jTextField2);
-        jPanel1.add(Box.createVerticalStrut(10));
+        JLabel usernameLabel = new JLabel("Username:   " + username);
+        usernameLabel.setForeground(new Color(60, 60, 70));
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        usernameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        usernameLabel.setBounds(0, 110, 460, 30);
+        card.add(usernameLabel);
 
-        // ── jLabel1 / jTextField1 : SCORE row ──
-        jLabel1 = new JLabel("     SCORE");
-        jLabel1.setFont(new Font("MS PGothic", Font.BOLD, 14));
-        jLabel1.setForeground(Color.WHITE);
-        jLabel1.setBackground(Color.BLACK);
-        jLabel1.setOpaque(true);
-        jLabel1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jPanel1.add(jLabel1);
+        JLabel scoreLabel = new JLabel("Score:   " + score);
+        scoreLabel.setForeground(new Color(30, 80, 180));
+        scoreLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        scoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        scoreLabel.setBounds(0, 150, 460, 34);
+        card.add(scoreLabel);
 
-        jTextField1 = new JTextField(String.valueOf(score));
-        jTextField1.setEditable(false);
-        jTextField1.setFont(new Font("MS PGothic", Font.BOLD, 18));
-        jTextField1.setHorizontalAlignment(JTextField.CENTER);
-        jTextField1.setMaximumSize(new Dimension(200, 36));
-        jTextField1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        jPanel1.add(jTextField1);
-        jPanel1.add(Box.createVerticalStrut(20));
+        JLabel rankLabel = new JLabel(score > 600 ? "Excellent!" : score > 300 ? "Good run!" : "Keep practicing!");
+        rankLabel.setForeground(new Color(120, 90, 30));
+        rankLabel.setFont(new Font("Arial", Font.ITALIC, 15));
+        rankLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        rankLabel.setBounds(0, 188, 460, 24);
+        card.add(rankLabel);
 
-        // ── Buttons ──
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        btnPanel.setBackground(new Color(0, 153, 153));
-
-        jButton1 = new JButton("TRY AGAIN!");
-        jButton1.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        jButton1.addActionListener(e -> {
+        // Try Again button
+        JButton againButton = new JButton("TRY AGAIN");
+        againButton.setBounds(80, 240, 140, 46);
+        againButton.setFont(new Font("Arial", Font.BOLD, 15));
+        againButton.setBackground(new Color(40, 120, 220));
+        againButton.setForeground(Color.WHITE);
+        againButton.setFocusPainted(false);
+        againButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        againButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        againButton.addActionListener(e -> {
             dispose();
-            EventQueue.invokeLater(() -> new secondUI(username).display());
+            new secondUI(username).display();
         });
+        card.add(againButton);
 
-        jButton2 = new JButton("EXIT");
-        jButton2.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        jButton2.addActionListener(e -> System.exit(0));
+        // Normal EXIT button
+        JButton exitButton = new JButton("EXIT");
+        exitButton.setBounds(240, 240, 140, 46);
+        exitButton.setFont(new Font("Arial", Font.BOLD, 15));
+        exitButton.setBackground(new Color(180, 40, 40));
+        exitButton.setForeground(Color.WHITE);
+        exitButton.setFocusPainted(false);
+        exitButton.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        exitButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        exitButton.addActionListener(e -> System.exit(0));
+        card.add(exitButton);
 
-        btnPanel.add(jButton1);
-        btnPanel.add(jButton2);
-        jPanel1.add(btnPanel);
-
-        getContentPane().add(jPanel1);
-        pack();
-        setSize(400, 380);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
 
     @Override
-    public void display() {
-        EventQueue.invokeLater(() -> setVisible(true));
-    }
+    public void display() { setVisible(true); }
 }
 
-// ─────────────────────────────────────────────────────────────────
-//  ENTRY POINT
-// ─────────────────────────────────────────────────────────────────
-class RunTheTale {
+// =====================================================
+// MAIN CLASS
+// =====================================================
+public class RunTheTale {
     public static void main(String[] args) {
-        GameScreen.applyNimbus();
-        EventQueue.invokeLater(() -> new NewJFrame().display());
+        SwingUtilities.invokeLater(() -> new firstUI().display());
     }
 }
