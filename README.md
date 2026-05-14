@@ -280,6 +280,14 @@ RunTheTale.java
 
 3. Play the game 
 
+## 📌 NOTES
+
+* Built with Java Swing (no external game engine)
+* Lightweight 2D game architecture
+* Designed using proper OOP principles
+* Timer-based FPS system (~60 FPS)
+
+
 
 
 
